@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+        <service id="whatwedo.gocrypto_payment" class="Payum\Core\Bridge\Symfony\Builder\GatewayFactoryBuilder">
+            <argument>Whatwedo\SyliusGoCryptoPaymentPlugin\Payum\GoCryptoPaymentGatewayFactory</argument>
+            <tag name="payum.gateway_factory_builder" factory="gocrypto_payment" />
+        </service>
+
+        <service id="Whatwedo\SyliusGoCryptoPaymentPlugin\Form\Type\GoCryptoPaymentGatewayConfigurationType">
+            <tag name="sylius.gateway_configuration_type" type="gocrypto_payment" label="GoCrypto Payment" />
+            <tag name="form.type" />
+        </service>
+
+        <service id="Whatwedo\SyliusGoCryptoPaymentPlugin\Payum\Action\CaptureAction" public="true">
+            <tag name="payum.action" factory="gocrypto_payment" alias="payum.action.capture" />
+        </service>
+    </services>
+</container>
