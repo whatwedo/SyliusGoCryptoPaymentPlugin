@@ -13,6 +13,7 @@
         </service>
 
         <service id="Whatwedo\SyliusGoCryptoPaymentPlugin\Payum\Action\CaptureAction" public="true">
+            <argument type="service" id="sylius.http_client" />
             <tag name="payum.action" factory="gocrypto_payment" alias="payum.action.capture" />
         </service>
     </services>

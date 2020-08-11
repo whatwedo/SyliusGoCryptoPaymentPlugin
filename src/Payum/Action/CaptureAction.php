@@ -39,6 +39,7 @@ use Whatwedo\SyliusGoCryptoPaymentPlugin\Payum\GoCryptoApi;
 use Sylius\Component\Core\Model\PaymentInterface as SyliusPaymentInterface;
 use Sylius\Component\Core\Model\OrderInterface as SyliusOrderInterface;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class CaptureAction implements ActionInterface, ApiAwareInterface
 {
@@ -73,46 +74,52 @@ class CaptureAction implements ActionInterface, ApiAwareInterface
 
         $returnUrl = $request->getToken()->getAfterUrl();
 
-        // STEP 1: Authenticate
-        $authResponse = $this->client->post(self::AUTH_ENDPOINT, [
-            RequestOptions::HEADERS => [
-                'Content-Type' => 'application/json',
-                'X-ELI-Client-Id' => $this->api->getClientId(),
-                'X-ELI-Client-Secret' => $this->api->getClientSecret(),
-                'Site-Host' => $this->api->getHost(),
-            ]
-        ]);
-        $authJson = json_decode($authResponse->getBody());
-        if ($authJson['status'] === 1 && isset($authJson['data']['access_token'])) {
-            // STEP 2: Create a charge
-            $chargeResponse = $this->client->post(self::CHARGE_ENDPOINT, [
+        try {
+            // STEP 1: Authenticate
+            $authResponse = $this->client->post(self::AUTH_ENDPOINT, [
                 RequestOptions::HEADERS => [
                     'Content-Type' => 'application/json',
-                    'X-ELI-Access-Token' => $authJson['data']['access_token'],
-                    'X-ELI-Locale' => 'DE',
-                ],
-                RequestOptions::JSON => [
-                    'shop_name' => $this->api->getShopName(),
-                    'amount' => [
-                        'total' => $order->getTotal() / 100,
-                        'currency' => 'CHF',
-                    ],
-                    'return_url' => $returnUrl,
-                    'cancel_url' => $returnUrl,
+                    'X-ELI-Client-Id' => $this->api->getClientId(),
+                    'X-ELI-Client-Secret' => $this->api->getClientSecret(),
+                    'Site-Host' => $this->api->getHost(),
                 ]
             ]);
+            $authJson = json_decode($authResponse->getBody(), true);
+            if ($authJson['status'] === 1 && isset($authJson['data']['access_token'])) {
+                // STEP 2: Create a charge
+                $chargeResponse = $this->client->post(self::CHARGE_ENDPOINT, [
+                    RequestOptions::HEADERS => [
+                        'Content-Type' => 'application/json',
+                        'X-ELI-Access-Token' => $authJson['data']['access_token'],
+                        'X-ELI-Locale' => 'DE',
+                    ],
+                    RequestOptions::JSON => [
+                        'shop_name' => $this->api->getShopName(),
+                        'amount' => [
+                            'total' => $order->getTotal() / 100,
+                            'currency' => 'CHF',
+                        ],
+                        'return_url' => $returnUrl,
+                        'cancel_url' => $returnUrl,
+                    ]
+                ]);
 
-            $chargeJson = json_decode($chargeResponse->getBody());
-            if ($chargeJson['status'] === 1 && isset($chargeJson['data']['redirect_url'])) {
-                $payment->setDetails($chargeJson);
-                throw new HttpPostRedirect(
-                    $chargeJson['data']['redirect_url']
-                );
+                $chargeJson = json_decode($chargeResponse->getBody(), true);
+                if ($chargeJson['status'] === 1 && isset($chargeJson['data']['redirect_url'])) {
+                    $payment->setDetails($chargeJson);
+                    throw new HttpPostRedirect(
+                        $chargeJson['data']['redirect_url']
+                    );
+                } else {
+                    $payment->setDetails($chargeJson);
+                }
             } else {
-                $payment->setDetails(['message' => $chargeJson['message']]);
+                $payment->setDetails($authJson);
             }
-        } else {
-            $payment->setDetails(['message' => $authJson['message']]);
+        } catch (RequestException $exception) {
+            $payment->setDetails(
+                json_decode($exception->getResponse()->getBody(), true)
+            );
         }
     }
 

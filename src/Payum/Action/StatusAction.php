@@ -44,7 +44,7 @@ class StatusAction implements ActionInterface
         $payment->setDetails([]); // TODO:
 
         //TODO:
-
+        dump('is in active development...');
         dump($request);
         dump($_POST);
         dump($_GET);
