@@ -46,7 +46,13 @@ class GoCryptoPaymentGatewayFactory extends GatewayFactory
         ]);
 
         $config['payum.api'] = function (ArrayObject $config) {
-            return new GoCryptoApi($config['client_id'], $config['client_secret'], $config['shop_name'], $config['host']);
+            return new GoCryptoApi(
+                $config['client_id'],
+                $config['client_secret'],
+                $config['shop_name'],
+                $config['host'],
+                $config['prod']
+            );
         };
     }
 

@@ -51,12 +51,18 @@ class GoCryptoApi
      */
     private $host;
 
-    public function __construct(string $clientId, string $clientSecret, string $shopName, string $host)
+    /**
+     * @var bool $prod
+     */
+    private $prod;
+
+    public function __construct(string $clientId, string $clientSecret, string $shopName, string $host, bool $prod)
     {
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->shopName = $shopName;
         $this->host = $host;
+        $this->prod = $prod;
     }
 
     /**
@@ -89,6 +95,14 @@ class GoCryptoApi
     public function getShopName(): string
     {
         return $this->shopName;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isProd(): bool
+    {
+        return $this->prod;
     }
 
 }

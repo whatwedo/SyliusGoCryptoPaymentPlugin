@@ -29,6 +29,7 @@ namespace Whatwedo\SyliusGoCryptoPaymentPlugin\Form\Type;
 
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 
@@ -42,6 +43,9 @@ class GoCryptoPaymentGatewayConfigurationType extends AbstractType
             ->add('client_secret', TextType::class)
             ->add('shop_name', TextType::class)
             ->add('host', TextType::class)
+            ->add('prod', CheckboxType::class, [
+                'required' => false,
+            ])
         ;
     }
 

@@ -45,9 +45,16 @@ use GuzzleHttp\Exception\RequestException;
 class CaptureAction implements ActionInterface, ApiAwareInterface
 {
 
-    private const AUTH_ENDPOINT = 'https://ecommerce.gocrypto.com/api/auth';
+    private const STAGING = 'https://ecommerce.staging.gocrypto.com';
+    private const PROD = 'https://ecommerce.gocrypto.com';
 
-    private const CHARGE_ENDPOINT = 'https://ecommerce.gocrypto.com/api/charges';
+    private const AUTH = '/api/auth';
+    private const CHARGE = '/api/charges';
+
+    private function getEndpoint(string $method): string
+    {
+        return ($this->api->isProd() ? self::PROD : self::STAGING) . $method;
+    }
 
     /**
      * @var GoCryptoApi $api
@@ -77,7 +84,7 @@ class CaptureAction implements ActionInterface, ApiAwareInterface
 
         try {
             // STEP 1: Authenticate
-            $authResponse = $this->client->post(self::AUTH_ENDPOINT, [
+            $authResponse = $this->client->post($this->getEndpoint(self::AUTH), [
                 RequestOptions::HEADERS => [
                     'Content-Type' => 'application/json',
                     'X-ELI-Client-Id' => $this->api->getClientId(),
@@ -89,7 +96,7 @@ class CaptureAction implements ActionInterface, ApiAwareInterface
             if ($authJson['status'] === 1 && isset($authJson['data']['access_token'])) {
                 // STEP 2: Create a charge
                 $successToken = md5(random_bytes(100).date(DATE_RFC2822));
-                $chargeResponse = $this->client->post(self::CHARGE_ENDPOINT, [
+                $chargeResponse = $this->client->post($this->getEndpoint(self::CHARGE), [
                     RequestOptions::HEADERS => [
                         'Content-Type' => 'application/json',
                         'X-ELI-Access-Token' => $authJson['data']['access_token'],
@@ -101,7 +108,7 @@ class CaptureAction implements ActionInterface, ApiAwareInterface
                             'total' => $order->getTotal() / 100,
                             'currency' => 'CHF',
                         ],
-                        'return_url' => $returnUrl.'?success-token='.$successToken,
+                        'return_url' => $returnUrl.'&success-token='.$successToken,
                         'cancel_url' => $returnUrl,
                     ]
                 ]);
