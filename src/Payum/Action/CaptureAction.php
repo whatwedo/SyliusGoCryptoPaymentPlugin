@@ -34,6 +34,7 @@ use Payum\Core\ApiAwareInterface;
 use Payum\Core\Exception\RequestNotSupportedException;
 use Payum\Core\Exception\UnsupportedApiException;
 use Payum\Core\Reply\HttpPostRedirect;
+use Payum\Core\Reply\HttpRedirect;
 use Payum\Core\Request\Capture;
 use Whatwedo\SyliusGoCryptoPaymentPlugin\Payum\GoCryptoApi;
 use Sylius\Component\Core\Model\PaymentInterface as SyliusPaymentInterface;
@@ -87,6 +88,7 @@ class CaptureAction implements ActionInterface, ApiAwareInterface
             $authJson = json_decode($authResponse->getBody(), true);
             if ($authJson['status'] === 1 && isset($authJson['data']['access_token'])) {
                 // STEP 2: Create a charge
+                $successToken = md5(random_bytes(100).date(DATE_RFC2822));
                 $chargeResponse = $this->client->post(self::CHARGE_ENDPOINT, [
                     RequestOptions::HEADERS => [
                         'Content-Type' => 'application/json',
@@ -99,15 +101,15 @@ class CaptureAction implements ActionInterface, ApiAwareInterface
                             'total' => $order->getTotal() / 100,
                             'currency' => 'CHF',
                         ],
-                        'return_url' => $returnUrl,
+                        'return_url' => $returnUrl.'?success-token='.$successToken,
                         'cancel_url' => $returnUrl,
                     ]
                 ]);
-
                 $chargeJson = json_decode($chargeResponse->getBody(), true);
+                $chargeJson['success-token'] = $successToken;
                 if ($chargeJson['status'] === 1 && isset($chargeJson['data']['redirect_url'])) {
                     $payment->setDetails($chargeJson);
-                    throw new HttpPostRedirect(
+                    throw new HttpRedirect(
                         $chargeJson['data']['redirect_url']
                     );
                 } else {

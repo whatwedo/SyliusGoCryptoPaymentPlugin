@@ -42,7 +42,7 @@ class GoCryptoPaymentGatewayFactory extends GatewayFactory
         $config->defaults([
             'payum.factory_name' => self::FACTORY_NAME,
             'payum.factory_title' => 'GoCrypto Payment',
-            'payum.action.status' => new StatusAction(),
+            'payum.action.status' => new StatusAction($_GET),
         ]);
 
         $config['payum.api'] = function (ArrayObject $config) {

@@ -35,23 +35,42 @@ use Sylius\Component\Core\Model\PaymentInterface as SyliusPaymentInterface;
 class StatusAction implements ActionInterface
 {
 
+    /**
+     * @var array $getParameters
+     */
+    protected $getParameters;
+
+    /**
+     * StatusAction constructor.
+     * @param array $getParameters
+     */
+    public function __construct(array $getParameters)
+    {
+        $this->getParameters = $getParameters;
+    }
+
     public function execute($request)
     {
         RequestNotSupportedException::assertSupports($this, $request);
 
         /** @var SyliusPaymentInterface $payment */
         $payment = $request->getFirstModel();
-        $payment->setDetails([]); // TODO:
+        $details = $payment->getDetails();
 
-        //TODO:
-        dump('is in active development...');
-        dump($request);
-        dump($_POST);
-        dump($_GET);
-        dump($this);
-        die;
-        // unexpected, therefore mark as canceled
-        $request->markCanceled();
+        if (isset($details['success-token']) && $this->getSuccessToken() === $details['success-token']) {
+            $request->markCaptured();
+        } else {
+            $request->markCanceled();
+        }
+
+    }
+
+    protected function getSuccessToken()
+    {
+        if (isset($this->getParameters['success-token'])) {
+            return $this->getParameters['success-token'];
+        }
+        return null;
     }
 
     public function supports($request): bool
